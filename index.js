@@ -5,6 +5,7 @@ require('dotenv').config();
 require('./connection');
 
 const User = require("./models/Users");
+const Exercise = require("./models/Exercise");
 
 app.use(cors());
 app.use(express.json());
@@ -33,9 +34,19 @@ app.post("/api/users", (req, res) => {
     .catch(err => console.log(err))
 });
 
-/* app.get('/api/users', (req, res) => {
+app.get('/api/users', (req, res) => {
+  const findUsers = async () => {
+    const usersFound = await User.find({}, 'username _id');
+    return usersFound
+  }
+
+  findUsers()
+    .then(usersFound => res.json(usersFound))
+    .catch(err => console.log(err))
   
-}) */
+}) 
+
+
 
 const listener = app.listen(process.env.PORT || 3000, () => {
   console.log("Your app is listening on port " + listener.address().port);
