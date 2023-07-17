@@ -28,9 +28,9 @@ app.post("/api/users", (req, res) => {
 
   createUser(req.body.username)
     .then(user => res.json({
-        username: user.username,
-        _id: user._id,
-      }))
+      username: user.username,
+      _id: user._id,
+    }))
     .catch(err => console.log(err))
 });
 
@@ -43,12 +43,13 @@ app.get('/api/users', (req, res) => {
   findUsers()
     .then(usersFound => res.json(usersFound))
     .catch(err => console.log(err))
-}) 
+})
 
 app.post('/api/users/:_id/exercises', async (req, res) => {
 
-  const createExercise = async (username, des, dur, date) => {
+  const createExercise = async (id, username, des, dur, date) => {
     const exercise = new Exercise({
+      user_id: id,
       username: username,
       description: des,
       duration: dur,
@@ -61,13 +62,13 @@ app.post('/api/users/:_id/exercises', async (req, res) => {
   const user = await User.findById(req.params._id);
   if (user) {
     const { description, duration, date } = req.body;
-    createExercise(user.username, description, duration, date)
+    createExercise(user._id, user.username, description, duration, date)
       .then(exercise => res.json({
         _id: user._id,
         username: user.username,
         description: exercise.description,
         duration: exercise.duration,
-        date: new Date(exercise.date).toDateString()
+        date: new Date(exercise.date).toDateString(),
       }))
       .catch(err => console.log(err));
   } else {
@@ -77,9 +78,38 @@ app.post('/api/users/:_id/exercises', async (req, res) => {
 });
 
 
-app.get('/api/users/:_id/logs', (req, res) => {
-  const { from, to, limit } = req.query 
-})
+app.get('/api/users/:_id/logs', async (req, res) => {
+  const { from, to, limit } = req.query;
+  const id = req.params._id;
+  const user = await User.findById(id);
+
+  const filter = {
+    user_id: id,
+    ...(from && { date: { $gte: new Date(from) } }),
+    ...(to && { date: { $lte: new Date(to) } }),
+  };
+
+  const exercises = await Exercise.find(filter).limit(+limit || 500).exec();
+
+  if (exercises.length === 0) {
+    res.send("Could not find user");
+    return;
+  }
+
+  const log = exercises.map(e => ({
+    description: e.description,
+    duration: e.duration,
+    date: e.date.toDateString()
+  }));
+
+  res.json({
+    username: user.username,
+    count: exercises.length,
+    _id: user._id,
+    log: log
+  });
+});
+
 
 
 
