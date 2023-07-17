@@ -43,8 +43,43 @@ app.get('/api/users', (req, res) => {
   findUsers()
     .then(usersFound => res.json(usersFound))
     .catch(err => console.log(err))
-  
 }) 
+
+app.post('/api/users/:_id/exercises', async (req, res) => {
+
+  const createExercise = async (username, des, dur, date) => {
+    const exercise = new Exercise({
+      username: username,
+      description: des,
+      duration: dur,
+      date: date ? new Date(date) : new Date()
+    });
+    await exercise.save();
+    return exercise;
+  };
+
+  const user = await User.findById(req.params._id);
+  if (user) {
+    const { description, duration, date } = req.body;
+    createExercise(user.username, description, duration, date)
+      .then(exercise => res.json({
+        _id: user._id,
+        username: user.username,
+        description: exercise.description,
+        duration: exercise.duration,
+        date: new Date(exercise.date).toDateString()
+      }))
+      .catch(err => console.log(err));
+  } else {
+    res.send('User not found')
+  }
+
+});
+
+
+app.get('/api/users/:_id/logs', (req, res) => {
+  const { from, to, limit } = req.query 
+})
 
 
 
